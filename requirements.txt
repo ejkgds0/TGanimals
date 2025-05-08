@@ -2,5 +2,5 @@ python-telegram-bot==20.*
 python-dotenv
 torch
 torchvision
-opencv-python
+opencv-python-headless
 Pillow
