@@ -1,20 +1,16 @@
 import os
-from dotenv import load_dotenv
 from telegram import Update
-from telegram.ext import ApplicationBuilder, ContextTypes, MessageHandler, filters
+from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 
-# Загружаем .env
-load_dotenv()
 TOKEN = os.getenv("TELEGRAM_TOKEN")
 
-# Обработчик любых сообщений
-async def on_message(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
-    await ctx.bot.send_chat_action(update.effective_chat.id, 'typing')
-    await update.message.reply_text("Привет! Я TGanimals‑бот. Пришли мне фото животного — я определю, кто это.")
+app = ApplicationBuilder().token(TOKEN).build()
 
-# Точка входа
+# Команда
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text("Привет! Я бот 🐾")
+
+app.add_handler(CommandHandler("start", start))
+
 if __name__ == '__main__':
-    app = ApplicationBuilder().token(TOKEN).build()
-    app.add_handler(MessageHandler(filters.ALL, on_message))
-    print("Bot is running...")
     app.run_polling()
