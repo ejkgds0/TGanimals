@@ -5,8 +5,9 @@ __pycache__/
 # dotenv
 .env
 
-# модели
+# модели и данные от пользователей
 #models/
+user_photos/
 
 # VSCode
 .vscode/
