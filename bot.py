@@ -14,6 +14,7 @@ from torchvision.models import efficientnet_b1, EfficientNet_B1_Weights
 from PIL import Image, ImageFile
 from torchvision import datasets
 from concurrent.futures import ThreadPoolExecutor
+from dotenv import load_dotenv
 
 # --- Списки классов (метки словами) ---
 MAIN_CLASSES = [
@@ -61,7 +62,177 @@ BIRD_CLASSES = [
     'turkey bird', 'woodpecker'
 ]
 
+MAIN_TRANSLATIONS = {
+    'antelope': 'антилопа',
+    'badger': 'барсук',
+    'bat': 'летучая мышь',
+    'bear': 'медведь',
+    'bird': 'птица',
+    'bison': 'бизон',
+    'boar': 'кабан',
+    'cat': 'кошка',
+    'cheetah': 'гепард',
+    'cow': 'корова',
+    'coyote': 'койот',
+    'crab': 'краб',
+    'deer': 'олень',
+    'dog': 'собака',
+    'dolphin': 'дельфин',
+    'donkey': 'осёл',
+    'elephant': 'слон',
+    'fish': 'рыба',
+    'fox': 'лиса',
+    'frog': 'лягушка',
+    'goat': 'коза',
+    'hamster': 'хомяк',
+    'hare': 'заяц',
+    'hedgehog': 'ёж',
+    'hippopotamus': 'бегемот',
+    'horse': 'лошадь',
+    'hyena': 'гиена',
+    'insect': 'насекомое',
+    'jelly fish': 'медуза',
+    'kangaroo': 'кенгуру',
+    'koala': 'коала',
+    'leopard': 'леопард',
+    'lion': 'лев',
+    'lizard': 'ящерица',
+    'monkey': 'обезьяна',
+    'mouse': 'мышь',
+    'octopus': 'осьминог',
+    'okapi': 'окапи',
+    'otter': 'выдра',
+    'ox': 'бык',
+    'panda': 'панда',
+    'pig': 'свинья',
+    'porcupine': 'дикобраз',
+    'possum': 'опоссум',
+    'puma': 'пума',
+    'raccoon': 'енот',
+    'rat': 'крыса',
+    'reindeer': 'северный олень',
+    'rhinoceros': 'носорог',
+    'seahorse': 'морской конёк',
+    'seal': 'тюлень',
+    'shark': 'акула',
+    'sheep': 'овца',
+    'shrimp': 'креветка',
+    'snail': 'улитка',
+    'snake': 'змея',
+    'squirrel': 'белка',
+    'starfish': 'морская звезда',
+    'tiger': 'тигр',
+    'turtle': 'черепаха',
+    'whale': 'кит',
+    'wolf': 'волк',
+    'wombat': 'вомбат',
+    'zebra': 'зебра'
+}
+
+CAT_TRANSLATIONS = {
+    'abyssinian': 'абиссинская',
+    'bengal': 'бенгальская',
+    'birman': 'бирманская',
+    'bombay': 'бомбейская',
+    'british shorthair': 'британская короткошёрстная',
+    'egyptian mau': 'египетская мау',
+    'himalayan': 'гималайская',
+    'maine coon': 'мейн-кун',
+    'norwegian forest': 'норвежская лесная',
+    'oriental shorthair': 'ориентальная короткошёрстная',
+    'persian': 'персидская',
+    'ragdoll': 'рэгдолл',
+    'russian blue': 'русская голубая',
+    'scottish fold': 'шотландская вислоухая',
+    'siamese': 'сиамская',
+    'sphynx': 'сфинкс',
+    'turkish angora': 'турецкая ангора'
+}
+
+DOG_TRANSLATIONS = {
+    'american bulldog': 'американский бульдог',
+    'basset hound': 'басет-хаунд',
+    'beagle': 'бигль',
+    'border collie': 'бордер-колли',
+    'boxer': 'боксер',
+    'bull terrier': 'бультерьер',
+    'chihuahua': 'чихуахуа',
+    'corgi': 'корги',
+    'dachshund': 'такса',
+    'doberman': 'доберман',
+    'english cocker spaniel': 'английский кокер-спаниель',
+    'german shorthaired': 'немецкая короткошёрстная легавая',
+    'great pyrenees': 'пиренейская горная собака',
+    'havanese': 'гаванский бишон',
+    'husky': 'хаски',
+    'japanese chin': 'японский хин',
+    'keeshond': 'кисхонд',
+    'leonberger': 'леонбергер',
+    'miniature pinscher': 'миниатюрный пинчер',
+    'newfoundland': 'ньюфаундленд',
+    'pomeranian': 'померанский шпиц',
+    'poodle': 'пудель',
+    'pug': 'мопс',
+    'saint bernard': 'сенбернар',
+    'samoyed': 'самоед',
+    'scottish terrier': 'шотландский терьер',
+    'shiba inu': 'сиба-ину',
+    'staffordshire bull terrier': 'стаффордширский бультерьер',
+    'wheaten terrier': 'мягкошёрстный пшеничный терьер',
+    'yorkshire terrier': 'йоркширский терьер'
+}
+
+MONKEY_TRANSLATIONS = {
+    'baboon': 'бабуин',
+    'bald uakari': 'лысый уакари',
+    'cebus capucinus': 'капуцин обыкновенный',
+    'chimpanzee': 'шимпанзе',
+    'colobus monkey': 'обезьяна колобус',
+    'common squirrel monkey': 'обыкновенная беличья обезьяна',
+    'gibbon': 'гиббон',
+    'golden snub-nosed monkey': 'золотистая курносая обезьяна',
+    'gorilla': 'горилла',
+    'japanese macaque': 'японский макак',
+    'lemur': 'лемур',
+    'mantled howler': 'мантийный ревун',
+    'marmoset': 'мармозетка',
+    'nilgiri langur': 'нилгирийский лангур',
+    'orangutan': 'орангутан',
+    'patas monkey': 'обезьяна патас',
+    'proboscis monkey': 'носач',
+    'red-shanked douc': 'красноногий дук',
+    'spider monkey': 'паучья обезьяна',
+    'tamarin': 'тамарин',
+    'tarsiers': 'долгопят',
+    'vervet monkey': 'верветка'
+}
+
+BIRD_TRANSLATIONS = {
+    'bullfinch bird': 'снегирь',
+    'crow': 'ворона',
+    'duck': 'утка',
+    'eagle': 'орёл',
+    'flamingo': 'фламинго',
+    'goose': 'гусь',
+    'hummingbird': 'колибри',
+    'owl': 'сова',
+    'parrot': 'попугай',
+    'peacock': 'павлин',
+    'pelican': 'пеликан',
+    'penguin': 'пингвин',
+    'pigeon': 'голубь',
+    'sandpiper': 'кулик',
+    'sparrow': 'воробей',
+    'swan': 'лебедь',
+    'titmouse': 'синица',
+    'turkey': 'индейка',
+    'turkey bird': 'индюк',
+    'woodpecker': 'дятел'
+}
+
+
 # --- Настройки ---
+load_dotenv()
 TOKEN = os.getenv("TELEGRAM_TOKEN")
 MODEL_DIR = os.getenv("MODEL_DIR", "models")
 
@@ -330,10 +501,12 @@ bird_model   = load_model(
 async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = await update.message.reply_text('Думаю...')
     photo = update.message.photo[-1]
-    with tempfile.NamedTemporaryFile(suffix='.jpg') as tf:
-        await photo.get_file().download_to_drive(tf.name)
+    with tempfile.NamedTemporaryFile(suffix='.jpg', delete=False) as tf:
+        file = await photo.get_file()
+        await file.download_to_drive(tf.name)
         res = predict(main_model, tf.name, MAIN_CLASSES)
-        text = f"Вероятность {res['conf']:.1f}% что это {res['pred']}"
+        main_pred_ru = MAIN_TRANSLATIONS.get(res['pred'], res['pred'])
+        text = f"Вероятность {res['conf']:.1f}% что это {main_pred_ru}"
         if res['pred'] in ('cat','dog','monkey','bird'):
             smodel, sclist = {
                 'cat':    (cat_model,    CAT_CLASSES),
@@ -342,13 +515,20 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 'bird':   (bird_model,   BIRD_CLASSES)
             }[res['pred']]
             sub = predict(smodel, tf.name, sclist)
-            text += f"\nПорода: {sub['pred']} ({sub['conf']:.1f}% уверенности)"
+            trans_dict = {
+                'cat': CAT_TRANSLATIONS,
+                'dog': DOG_TRANSLATIONS,
+                'monkey': MONKEY_TRANSLATIONS,
+                'bird': BIRD_TRANSLATIONS 
+            }
+            breed_ru = trans_dict.get(res['pred'], {}).get(sub['pred'], sub['pred'])
+            text += f"\nПорода: {breed_ru} ({sub['conf']:.1f}% уверенности)"
         await msg.edit_text(text)
 
 # --- Запуск бота ---
 if __name__ == '__main__':
     app = ApplicationBuilder().token(TOKEN).build()
-    app.add_handler(CommandHandler('start', lambda u,c: u.message.reply_text('Привет! Я бот 🐾')))
+    app.add_handler(CommandHandler('start', lambda u,c: u.message.reply_text('Привет! Отправь мне фото животного — я скажу, кто это 🐾')))
     app.add_handler(MessageHandler(filters.PHOTO, handle_photo))
     app.run_polling()
 
