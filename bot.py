@@ -15,6 +15,8 @@ from PIL import Image, ImageFile
 from torchvision import datasets
 from concurrent.futures import ThreadPoolExecutor
 from dotenv import load_dotenv
+from datetime import datetime
+from telegram.ext import Updater, CallbackContext
 
 # --- Списки классов (метки словами) ---
 MAIN_CLASSES = [
@@ -498,37 +500,119 @@ bird_model   = load_model(
 )
 
 # --- Обработчик фото ---
+
+SAVE_DIR = 'user_photos'
+os.makedirs(SAVE_DIR, exist_ok=True)
+
 async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = await update.message.reply_text('Думаю...')
     photo = update.message.photo[-1]
-    with tempfile.NamedTemporaryFile(suffix='.jpg', delete=False) as tf:
-        file = await photo.get_file()
-        await file.download_to_drive(tf.name)
-        res = predict(main_model, tf.name, MAIN_CLASSES)
-        main_pred_ru = MAIN_TRANSLATIONS.get(res['pred'], res['pred'])
-        text = f"Вероятность {res['conf']:.1f}% что это {main_pred_ru}"
-        if res['pred'] in ('cat','dog','monkey','bird'):
-            smodel, sclist = {
-                'cat':    (cat_model,    CAT_CLASSES),
-                'dog':    (dog_model,    DOG_CLASSES),
-                'monkey': (monkey_model, MONKEY_CLASSES),
-                'bird':   (bird_model,   BIRD_CLASSES)
-            }[res['pred']]
-            sub = predict(smodel, tf.name, sclist)
-            trans_dict = {
-                'cat': CAT_TRANSLATIONS,
-                'dog': DOG_TRANSLATIONS,
-                'monkey': MONKEY_TRANSLATIONS,
-                'bird': BIRD_TRANSLATIONS 
-            }
-            breed_ru = trans_dict.get(res['pred'], {}).get(sub['pred'], sub['pred'])
-            text += f"\nПорода: {breed_ru} ({sub['conf']:.1f}% уверенности)"
-        await msg.edit_text(text)
+    file = await photo.get_file()
+
+    # данные о пользователе
+    user = update.message.from_user
+    user_id = user.id
+    username = user.username or "no_username"
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+
+    # имя файла
+    filename = f"{user_id}_{username}_{timestamp}_{update.message.message_id}.jpg"
+    file_path = os.path.join(SAVE_DIR, filename)
+
+    # сохраняем фото
+    await file.download_to_drive(file_path)
+
+    # основной анализ
+    res = predict(main_model, file_path, MAIN_CLASSES)
+    main_ru = MAIN_TRANSLATIONS.get(res['pred'], res['pred'])
+    text = f"Вероятность {res['conf']:.1f}% что это {main_ru}"
+
+    if res['pred'] in ('cat','dog','monkey','bird'):
+        smodel, sclist = {
+            'cat':    (cat_model,    CAT_CLASSES),
+            'dog':    (dog_model,    DOG_CLASSES),
+            'monkey': (monkey_model, MONKEY_CLASSES),
+            'bird':   (bird_model,   BIRD_CLASSES)
+        }[res['pred']]
+        sub = predict(smodel, file_path, sclist)
+        trans_dict = {
+            'cat': CAT_TRANSLATIONS,
+            'dog': DOG_TRANSLATIONS,
+            'monkey': MONKEY_TRANSLATIONS,
+            'bird': BIRD_TRANSLATIONS 
+        }
+        breed_ru = trans_dict.get(res['pred'], {}).get(sub['pred'], sub['pred'])
+        text += f"\nПорода: {breed_ru} ({sub['conf']:.1f}% уверенности)"
+    await msg.edit_text(text)
+
+# --- Функция для форматирования списка ---
+def format_list(title, items, translations):
+    lines = []
+    for key in sorted(items):
+        # используем перевод, если он есть
+        display = translations.get(key, key)
+        lines.append(f"• {display}")
+    return f"<b>{title} ({len(items)}):</b>\n" + "\n".join(lines)
+
+# --- Обработчики команд для отображения списка ---
+async def list_main(update: Update, context: CallbackContext) -> None:
+    text = format_list(
+        "Распознаваемые животные", 
+        MAIN_CLASSES, 
+        MAIN_TRANSLATIONS
+    )
+    await update.message.reply_text(text, parse_mode="HTML")
+
+async def list_cats(update: Update, context: CallbackContext) -> None:
+    text = format_list(
+        "Породы кошек", 
+        CAT_CLASSES, 
+        CAT_TRANSLATIONS
+    )
+    await update.message.reply_text(text, parse_mode="HTML")
+
+async def list_dogs(update: Update, context: CallbackContext) -> None:
+    text = format_list(
+        "Породы собак", 
+        DOG_CLASSES, 
+        DOG_TRANSLATIONS
+    )
+    await update.message.reply_text(text, parse_mode="HTML")
+
+async def list_monkeys(update: Update, context: CallbackContext) -> None:
+    text = format_list(
+        "Виды обезьян", 
+        MONKEY_CLASSES, 
+        MONKEY_TRANSLATIONS
+    )
+    await update.message.reply_text(text, parse_mode="HTML")
+
+async def list_birds(update: Update, context: CallbackContext) -> None:
+    text = format_list(
+        "Виды птиц", 
+        BIRD_CLASSES, 
+        BIRD_TRANSLATIONS
+    )
+    await update.message.reply_text(text, parse_mode="HTML")
+
+# --- Основная функция для запуска бота ---
+async def main():
+    app = ApplicationBuilder().token(TOKEN).build()
+
+    app.add_handler(CommandHandler('start', lambda u,c: u.message.reply_text('Привет! Отправь мне фото животного — я скажу, кто это 🐾')))
+    app.add_handler(CommandHandler("list_main", list_main))
+    app.add_handler(CommandHandler("list_cats", list_cats))
+    app.add_handler(CommandHandler("list_dogs", list_dogs))
+    app.add_handler(CommandHandler("list_monkeys", list_monkeys))
+    app.add_handler(CommandHandler("list_birds", list_birds))
+    app.add_handler(MessageHandler(filters.PHOTO, handle_photo))
+
+    await app.run_polling()
 
 # --- Запуск бота ---
-if __name__ == '__main__':
-    app = ApplicationBuilder().token(TOKEN).build()
-    app.add_handler(CommandHandler('start', lambda u,c: u.message.reply_text('Привет! Отправь мне фото животного — я скажу, кто это 🐾')))
-    app.add_handler(MessageHandler(filters.PHOTO, handle_photo))
-    app.run_polling()
+if __name__ == "__main__":
+    import nest_asyncio
+    import asyncio
 
+    nest_asyncio.apply()  # Патчит уже существующий event loop
+    asyncio.get_event_loop().run_until_complete(main())
